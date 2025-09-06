@@ -16,8 +16,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <div>
           <Navbar />
-          <Donate contractAddress="0xe047cD944764725fd56555e8Bd5e008631dcd436" />
-          <Withdraw contractAddress="0xe047cD944764725fd56555e8Bd5e008631dcd436" />
+          <Donate contractAddress="0xf91C5A45E83523a11f86D75f58512708E6361111" />
+          <Withdraw contractAddress="0xf91C5A45E83523a11f86D75f58512708E6361111" />
         </div>
       </QueryClientProvider>
     </WagmiProvider>

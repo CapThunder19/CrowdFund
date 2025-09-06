@@ -10,11 +10,28 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
     const [donate, setDonate] = useState(false);
     const [txHash, setTxHash] = useState('');
     const [totalFunds, setTotalFunds] = useState('0');
+    const [initName, setInitName] = useState('');
     const [initGoal, setInitGoal] = useState('');
     const [initDuration, setInitDuration] = useState('');
     const [initLoading, setInitLoading] = useState(false);
     const [initMsg, setInitMsg] = useState('');
+    const [canInitialize, setCanInitialize] = useState(false);
 
+    useEffect(() => {
+    const fetchOwner = async () => {
+        try {
+            const { ethereum } = window;
+            if (!ethereum) return;
+            const provider = new ethers.BrowserProvider(ethereum);
+            const contract = new ethers.Contract(contractAddress, Donateabi.abi, provider);
+            const owner = await contract.owner();
+            setCanInitialize(owner && owner.toLowerCase() === "0x0000000000000000000000000000000000000000");
+        } catch {
+            setCanInitialize(false);
+        }
+    };
+    fetchOwner();
+}, [contractAddress, txHash]);
 
     useEffect(() => {
         const fetchTotalFunds = async () => {
@@ -30,40 +47,38 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
             }
         };
         fetchTotalFunds();
-    }, [txHash]);
+    }, [txHash, contractAddress]);
 
-   
-   
-   
     const handledonate = async (e: React.FormEvent) => {
         e.preventDefault();
         setDonate(true);
 
-        if (!isConnected) {
-            alert("Please connect your wallet to donate.");
-            setDonate(false);
-            return;
+        try {
+            if (!isConnected) {
+                alert("Please connect your wallet to donate.");
+                setDonate(false);
+                return;
+            }
+            const { ethereum } = window;
+            if (!ethereum) {
+                alert("Please install MetaMask.");
+                setDonate(false);
+                return;
+            }
+            const provider = new ethers.BrowserProvider(ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(contractAddress, Donateabi.abi, signer);
+            const tx = await contract.contribute({
+                value: ethers.parseEther(amount)
+            });
+            setTxHash(tx.hash);
+            await tx.wait();
+        } catch (err: any) {
+            alert("Donation failed: " + (err?.reason || err?.message || ""));
         }
-        const { ethereum } = window;
-        if (!ethereum) {
-            alert("Please install MetaMask.");
-            setDonate(false);
-            return;
-        }
-        const provider = new ethers.BrowserProvider(ethereum);
-        const signer = await provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, Donateabi.abi, signer);
-        const tx = await contract.contribute({
-            value: ethers.parseEther(amount)
-        });
-        setTxHash(tx.hash);
-        await tx.wait();
         setDonate(false);
     };
 
-    
-    
-    
     const handleInitialize = async (e: React.FormEvent) => {
         e.preventDefault();
         setInitLoading(true);
@@ -84,9 +99,10 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, Donateabi.abi, signer);
             const tx = await contract.initialize(
-                ethers.parseEther(initGoal),
-                Number(initDuration)
-            );
+                 initName, 
+                ethers.parseEther(initGoal), 
+                 Number(initDuration) 
+                );
             await tx.wait();
             setInitMsg("Initialized successfully!");
         } catch (err: any) {
@@ -95,13 +111,12 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
         setInitLoading(false);
     };
 
-
-    
-
     return (
         <div className="bg-white bg-opacity-90 shadow-xl rounded-2xl p-8 max-w-md mx-auto mt-12 border border-[#ff3f81]-200">
             <h2 className="text-2xl font-bold text-[#ff3f81] mb-2 text-center">Donate</h2>
-            <div className="mb-4 text-lg font-semibold text-gray-700 text-center">Total Donations: <span className="text-[#ff3f81]-500">{totalFunds} ETH</span></div>
+            <div className="mb-4 text-lg font-semibold text-gray-700 text-center">
+                Total Donations: <span className="text-[#ff3f81]-500">{totalFunds} ETH</span>
+            </div>
             <form onSubmit={handledonate} className="flex flex-col gap-4">
                 <input
                     type="text"
@@ -136,10 +151,19 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
             <form onSubmit={handleInitialize} className="flex flex-col gap-3">
                 <input
                     type="text"
+                    placeholder="Fund Name"
+                    value={initName}
+                    onChange={e => setInitName(e.target.value)}
+                    className="border border-[#ff3f81]-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff3f81]-400 transition"
+                    required
+                />
+                <input
+                    type="text"
                     placeholder="Goal in ETH"
                     value={initGoal}
                     onChange={e => setInitGoal(e.target.value)}
                     className="border border-[#ff3f81]-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff3f81]-400 transition"
+                    required
                 />
                 <input
                     type="number"
@@ -147,14 +171,20 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
                     value={initDuration}
                     onChange={e => setInitDuration(e.target.value)}
                     className="border border-[#ff3f81]-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff3f81]-400 transition"
+                    required
                 />
-                <button
-                    type="submit"
-                    disabled={initLoading}
-                    className="bg-[#ff3f81] hover:bg-[#ff3f81]-600 text-white px-6 py-2 rounded-lg shadow transition disabled:opacity-50 font-semibold"
-                >
-                    {initLoading ? "Initializing..." : "Initialize"}
-                </button>
+               <button
+                 type="submit"
+                 disabled={initLoading || !canInitialize}
+                   className="bg-[#ff3f81] hover:bg-[#ff3f81]-600 text-white px-6 py-2 rounded-lg shadow transition disabled:opacity-50 font-semibold"
+                     >
+                   {initLoading ? "Initializing..." : "Initialize"}
+                 </button>
+                  {!canInitialize && (
+              <div className="text-xs text-red-500 mt-1 text-center">
+                  You can only initialize after the previous campaign is withdrawn.
+              </div>
+                )}
             </form>
             {initMsg && <div className={`mt-2 text-center font-semibold ${initMsg.includes('success') ? 'text-[#ff3f81]-600' : 'text-red-600'}`}>{initMsg}</div>}
         </div>
