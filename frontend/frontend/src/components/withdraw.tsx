@@ -80,7 +80,7 @@ export const Withdraw: React.FC<{ contractAddress: string }> = ({ contractAddres
             </div>
 
             <form onSubmit={handleWithdraw} className="flex flex-col gap-4">
-                <button disabled={!canWithdraw || withdrawing} className="bg-pink-400 px-4 py-2 rounded text-white">
+                <button disabled={!canWithdraw || withdrawing} className="bg-[#ff3f81] px-4 py-2 rounded text-white">
                     {withdrawing ? "Processing..." : "Withdraw"}
                 </button>
             </form>

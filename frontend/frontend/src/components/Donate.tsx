@@ -147,7 +147,7 @@ export const Donate: React.FC<{ contractAddress: string }> = ({ contractAddress 
                 </div>
             )}
             <hr className="my-8 border-[#ff3f81]-200" />
-            <h3 className="text-lg font-bold text-[#ff3f81]-700 mb-2 text-center">Initialize Crowdfund</h3>
+            <h3 className="text-lg font-bold text-[#ff3f81] mb-2 text-center">Initialize Crowdfund</h3>
             <form onSubmit={handleInitialize} className="flex flex-col gap-3">
                 <input
                     type="text"
